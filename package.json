@@ -1,0 +1,26 @@
+{
+  "name": "vnlottery",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate"
+  },
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cheerio": "^1.0.0-rc.3",
+    "cookie-parser": "^1.4.5",
+    "cor": "^0.0.0",
+    "core-js": "^3.6.5",
+    "dotenv": "^8.2.0",
+    "mongoose": "^5.10.5",
+    "morgan": "^1.10.0",
+    "nuxt": "^2.14.5",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/vuetify": "^1.11.2"
+  }
+}
