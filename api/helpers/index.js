@@ -41,8 +41,26 @@ const getWeekDay = (date) => {
   ['chu-nhat', 'thu-2', 'thu-3', 'thu-4', 'thu-5', 'thu-6', 'thu-7'][dayOfWeek];
 }
 
+const sleep = (second) => {
+  return new Promise(resolve => setTimeout(resolve,second));
+}
+
+const generateRandomTitle =  (fullname, sumname) => {
+
+  let kq = ['Kết quả', 'KQ'];
+  let kqStr = kq[Math.floor(Math.random() * kq.length)];
+  let xs = ['xổ số', 'xs', 'sx'];
+  let xsStr = xs[Math.floor(Math.random() * xs.length)];
+  let area = [fullname, sumname];
+  let areaStr = area[Math.floor(Math.random() * area.length)];
+
+  return kqStr + ' ' + xsStr + ' ' + areaStr;
+}
+
 module.exports = {
   toSlug,
   transformDate,
-  getWeekDay
+  getWeekDay,
+  sleep,
+  generateRandomTitle
 }

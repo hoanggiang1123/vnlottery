@@ -2,7 +2,9 @@ const https = require('https');
 const cheerio = require('cheerio');
 
 const { SCHEDULE } = require('../helpers/lotteryMockup')
-const { getWeekDay, toSlug, transformDate } = require('../helpers')
+const { getWeekDay, toSlug, transformDate, generateRandomTitle, sleep } = require('../helpers')
+const LotoModel = require('../models/LotoModel')
+const CityModel = require('../models/CityModel')
 
 module.exports = class LotteryCraw {
 
@@ -47,26 +49,26 @@ module.exports = class LotteryCraw {
   getContent (path) {
     return new Promise((resolve, reject) => {
         const options = {
-            hostname: 'xskt.com.vn',
-            path: path,
-            method: 'GET',
-            timeout: 3000
+          hostname: 'xskt.com.vn',
+          path: path,
+          method: 'GET',
+          timeout: 3000
         }
         var req = https.request(options, (res) => {
-            res.setEncoding('utf8');
-            let strData = '';
-            res.on('data', data => {
-                strData += data;
-            })
-            res.on('end', () => {
-                resolve(strData);
-            })
+          res.setEncoding('utf8');
+          let strData = '';
+          res.on('data', data => {
+            strData += data;
+          })
+          res.on('end', () => {
+            resolve(strData);
+          })
         })
         req.on('timeout', () => {
-            resolve(null);
+          resolve(null);
         })
         req.on('error', error => {
-            reject(error)
+          reject(error)
         })
         req.end();
     });
@@ -173,5 +175,89 @@ module.exports = class LotteryCraw {
     }
 
     return resp;
+  }
+
+  async saveLotteries(urlArr) {
+    let fail = [];
+    for (const k of urlArr) {
+      let path = k.path;
+      let date = k.dayStr;
+      let day = new Date(date).getDay();
+  
+      try {
+        let content = await this.getContent(path);
+
+        if(content === null) {
+          await sleep(5000);
+          content = await getContent(path);
+
+          if (content !== null) {
+            const $ = cheerio.load(content);
+            let table = $('table')[0];
+
+            if (table) {
+              let data = {};
+
+              if ($(table).attr('id') === 'MB0') {
+                data = parseContentMb(table, date);
+              } else {
+                data = parseContent(table);
+              }
+
+              if(Object.keys(data).length) {
+
+                for (const key of Object.keys(data)) {
+
+                  if (data[key]) {
+
+                    const checkSlug = path + '_' + key;
+
+                    try {
+
+                      const check = await LotoModel.checkLotteryExist(checkSlug);
+
+                      if (check === false) {
+                        const cityAreaObj = await CityModel.getCityBySlug(key);
+
+                        let city = {};
+                        let area = {};
+                        let name = '';
+                        let subname = '';
+
+                        if (cityAreaObj !== null) {
+                          city = { _id: cityAreaObj._id, name: cityAreaObj.name, slug: cityAreaObj.slug, code: cityAreaObj.code };
+                          area = { _id: cityAreaObj.area._id, name: cityAreaObj.area.name, slug: cityAreaObj.area.slug, code: cityAreaObj.area.code, order: cityAreaObj.area.order }
+                          name = generateRandomTitle(cityAreaObj.name, cityAreaObj.code);
+                          subname = generateRandomTitle(cityAreaObj.area.name, cityAreaObj.area.code);
+                        }
+
+                        const { db, g1, g2, g3, g4, g5, g6, g7, g8 } = data[key];
+                        const result = { db, g1, g2, g3, g4, g5, g6, g7, g8 };
+
+                        const loto = new Lottery({ name, subname, result, area, city, date, day, check: checkSlug });
+
+                        LotoModel.saveLoto(loto).then((res) => {
+                          console.log(res)
+                        }).catch(err => console.log(err));
+                      } else {
+                        console.log(`Lottery already exsit ${checkSlug}`);
+                      }
+                    } catch (err) {
+                      console.log(err);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          fail.push(k);
+        }
+
+      } catch (err) {
+        console.log(err)
+      }
+    }
+    return fail
   }
 }

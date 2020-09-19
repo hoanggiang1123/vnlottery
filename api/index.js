@@ -7,11 +7,16 @@ const mongoose = require('mongoose')
 
 const app = express()
 const http = require('http').createServer(app)
+const io = require('socket.io')(http);
 
 app.use(morgan('dev'))
 app.use(bodyParser.json())
 app.use(cookieParser())
 
+app.use(function(req, res, next) {
+  req.io = io;
+  next()
+})
 
 app.use('/craw', require('./routes/crawLottery'))
 

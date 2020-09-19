@@ -13,7 +13,7 @@
     "cheerio": "^1.0.0-rc.3",
     "cookie-parser": "^1.4.5",
     "cor": "^0.0.0",
-    "core-js": "^3.6.5",
+    "core-js": "2",
     "dotenv": "^8.2.0",
     "mongoose": "^5.10.5",
     "morgan": "^1.10.0",
