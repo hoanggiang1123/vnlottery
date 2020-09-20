@@ -1,17 +1,15 @@
 const { checkQueryCrawler } = require('../helpers/checkParams')
 const LotteryCraw = require('../craw')
 
-const checkFailSaveLottery = (urlArr) => {
-
+async function checkFailSaveLottery (urlArr, io) {
   const craw = new LotteryCraw()
-  const fail = craw.saveLotteries(urlArr)
-
+  const fail = await craw.saveLotteries(urlArr, io)
   if (fail.length) {
     checkFailSaveLottery(fail)
   }
 }
 
-exports.get_craw = (req, res) => {
+async function get_craw (req, res) {
   const { area , from, to } = checkQueryCrawler(req.query)
 
   if(area === '' ||from === '' ||  to === '') {
@@ -26,13 +24,19 @@ exports.get_craw = (req, res) => {
     msg: 'getting lottery...'
   })
 
-  console.log(req.io)
-
-  // const craw = new LotteryCraw()
-  // const urlArr = craw.getCrawLotteryUrl(area, from, to);
-  // try {
-  //   checkFailSaveLottery(urlArr)
-  // } catch (err) {
-  //   console.log(err)
-  // }
+  const craw = new LotteryCraw()
+  const urlArr = craw.getCrawLotteryUrl(area, from, to);
+  if (urlArr.length) {
+    try {
+      io.emit('SERVER_SEND_SAVE_LOTO', { status: 'success', msg: 'Start Getting Lotto' })
+      await checkFailSaveLottery(urlArr, req.io)
+    } catch (err) {
+      console.log(err)
+    }
+  } else {
+    io.emit('SERVER_SEND_SAVE_LOTO', { status: 'error', msg: 'Can not get content, pls check area and date' })
+  }
+  
 }
+
+exports.get_craw = get_craw

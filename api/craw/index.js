@@ -177,87 +177,104 @@ module.exports = class LotteryCraw {
     return resp;
   }
 
-  async saveLotteries(urlArr) {
+  async saveLotteries (urlArr, io) {
+
     let fail = [];
+
     for (const k of urlArr) {
+
       let path = k.path;
       let date = k.dayStr;
       let day = new Date(date).getDay();
   
       try {
-        let content = await this.getContent(path);
 
+        let content = await this.getContent(path);
         if(content === null) {
           await sleep(5000);
-          content = await getContent(path);
+          content = await this.getContent(path);
+        }
 
-          if (content !== null) {
-            const $ = cheerio.load(content);
-            let table = $('table')[0];
+        if (content !== null) {
 
-            if (table) {
-              let data = {};
+          const $ = cheerio.load(content);
+          let table = $('table')[0];
+          if (table) {
 
-              if ($(table).attr('id') === 'MB0') {
-                data = parseContentMb(table, date);
-              } else {
-                data = parseContent(table);
-              }
+            let data = {};
 
-              if(Object.keys(data).length) {
+            if ($(table).attr('id') === 'MB0') {
+              data = this.parseContentMb(table, date);
+            } else if ($(table).attr('id') === 'MN0' || $(table).attr('id') === 'MT0') {
+              data = this.parseContent(table);
+            }
 
-                for (const key of Object.keys(data)) {
+            if(Object.keys(data).length) {
 
-                  if (data[key]) {
+              for (const key of Object.keys(data)) {
 
-                    const checkSlug = path + '_' + key;
+                if (data[key]) {
 
-                    try {
+                  const checkSlug = path + '_' + key;
+                  try {
 
-                      const check = await LotoModel.checkLotteryExist(checkSlug);
+                    const check = await LotoModel.checkLotteryExist(checkSlug);
 
-                      if (check === false) {
-                        const cityAreaObj = await CityModel.getCityBySlug(key);
+                    if (check === false) {
 
-                        let city = {};
-                        let area = {};
-                        let name = '';
-                        let subname = '';
+                      const cityAreaObj = await CityModel.getCityBySlug(key);
 
-                        if (cityAreaObj !== null) {
-                          city = { _id: cityAreaObj._id, name: cityAreaObj.name, slug: cityAreaObj.slug, code: cityAreaObj.code };
-                          area = { _id: cityAreaObj.area._id, name: cityAreaObj.area.name, slug: cityAreaObj.area.slug, code: cityAreaObj.area.code, order: cityAreaObj.area.order }
-                          name = generateRandomTitle(cityAreaObj.name, cityAreaObj.code);
-                          subname = generateRandomTitle(cityAreaObj.area.name, cityAreaObj.area.code);
-                        }
+                      let city = {};
+                      let area = {};
+                      let name = '';
+                      let subname = '';
 
-                        const { db, g1, g2, g3, g4, g5, g6, g7, g8 } = data[key];
-                        const result = { db, g1, g2, g3, g4, g5, g6, g7, g8 };
+                      if (cityAreaObj !== null) {
 
-                        const loto = new Lottery({ name, subname, result, area, city, date, day, check: checkSlug });
-
-                        LotoModel.saveLoto(loto).then((res) => {
-                          console.log(res)
-                        }).catch(err => console.log(err));
-                      } else {
-                        console.log(`Lottery already exsit ${checkSlug}`);
+                        city = { _id: cityAreaObj._id, name: cityAreaObj.name, slug: cityAreaObj.slug, code: cityAreaObj.code };
+                        area = { _id: cityAreaObj.area._id, name: cityAreaObj.area.name, slug: cityAreaObj.area.slug, code: cityAreaObj.area.code, order: cityAreaObj.area.order }
+                        name = generateRandomTitle(cityAreaObj.name, cityAreaObj.code);
+                        subname = generateRandomTitle(cityAreaObj.area.name, cityAreaObj.area.code);
                       }
-                    } catch (err) {
-                      console.log(err);
+
+                      const { db, g1, g2, g3, g4, g5, g6, g7, g8 } = data[key];
+                      const result = { db, g1, g2, g3, g4, g5, g6, g7, g8 };
+                      const loto = { name, subname, result, area, city, date, day, check: checkSlug };
+
+                      LotoModel.saveLoto(loto).then((res) => {
+                        if (res === 'ok') {
+                          console.log(`success ${checkSlug}`)
+                          io.emit('SERVER_SEND_SAVE_LOTO', { status: 'success', msg: checkSlug })
+                        }
+                      }).catch(err => {
+                        io.emit('SERVER_SEND_SAVE_LOTO', { status: 'error', msg: checkSlug })
+                      });
+
+                    } else {
+
+                      console.log(`Lottery already exsit ${checkSlug}`);
+                      io.emit('SERVER_SEND_SAVE_LOTO', { status: 'warning', msg: checkSlug })
                     }
+
+                  } catch (err) {
+                    console.log(err);
+                    io.emit('SERVER_SEND_SAVE_LOTO', { status: 'error', msg: checkSlug })
                   }
+
                 }
               }
             }
           }
+
         } else {
           fail.push(k);
         }
 
       } catch (err) {
-        console.log(err)
+        io.emit('SERVER_SEND_SAVE_LOTO', { status: 'error', msg: 'Can not get loto content' })
       }
     }
+
     return fail
   }
 }

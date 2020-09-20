@@ -1,5 +1,5 @@
-const Area = require('../models/area');
-const City = require('../models/city');
+const Area = require('../schemas/area');
+const City = require('../schemas/city');
 
 const { LOTOVN } = require('./lotteryMockup');
 
