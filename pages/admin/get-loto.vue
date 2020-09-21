@@ -80,11 +80,18 @@
           </v-card-text>
         </v-card>
       </v-col>
-      
+      <v-row>
+        <v-col v-if="crawMsg.length" cols="12">
+          <v-alert v-for="(msg, index) in crawMsg" :key="index" :type="msg.status">
+            {{ msg.msg }}
+          </v-alert>
+        </v-col>
+      </v-row>
     </v-row>
   </v-container>
 </template>
 <script>
+let socket
 export default {
   data() {
     return {
@@ -94,11 +101,22 @@ export default {
         dateTo: new Date().toISOString().substr(0, 10),
         menu: false,
         menu1: false,
+        crawMsg: []
     }
   },
-  sockets: {
-    connect: function() {
-      console.log('socket connected')
+  asyncData ({ req }) {
+    const domain = req ? 'http://' + req.headers.host: 'http://' + window.location.host
+    const socket = domain + '/socket.io/socket.io.js'
+    return {
+      socket
+    }
+  },
+  head () {
+    return {
+      title: "Get Lottery",
+      script: [
+        { src:  this.socket }
+      ]
     }
   },
   computed: {
@@ -110,6 +128,14 @@ export default {
       const [year, month, day] = this.dateTo.split('-')
       return `${day}/${month}/${year}`
     }
+  },
+  mounted () {
+    socket = io()
+    socket.on('SERVER_SEND_SAVE_LOTO', (data) => {
+      if (data) {
+        this.crawMsg = [...this.crawMsg, data]
+      }
+    })
   },
   methods: {
     formatDate (date) {
