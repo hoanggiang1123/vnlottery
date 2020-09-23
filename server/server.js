@@ -36,6 +36,7 @@ app.use(function(req, res, next) {
 })
 
 app.use('/api/craw', require('./routes/crawLottery'))
+app.use('/api/user', require('./routes/user'))
 
 // We instantiate Nuxt.js with the options
 var config = require('../nuxt.config.js')

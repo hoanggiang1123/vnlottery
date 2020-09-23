@@ -113,10 +113,7 @@ export default {
   },
   head () {
     return {
-      title: "Get Lottery",
-      script: [
-        { src:  this.socket }
-      ]
+      title: "Get Lottery"
     }
   },
   computed: {

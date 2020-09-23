@@ -12,7 +12,7 @@
         <v-list-item
           v-for="(item, i) in items"
           :key="i"
-          :to="item.to"
+          :to="{ path: item.to }"
           router
           exact
         >

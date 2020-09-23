@@ -12,6 +12,9 @@ module.exports = {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+    ],
+    script: [
+      { src: process.env.BASE_URL +'/socket.io/socket.io.js' }
     ]
   },
 
